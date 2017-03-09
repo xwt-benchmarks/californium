@@ -264,10 +264,8 @@ public class ServerHandshaker extends Handshaker {
 				byte[] premasterSecret;
 				switch (getKeyExchangeAlgorithm()) {
 				case PSK:
-					premasterSecret = receivedClientKeyExchange((PSKClientKeyExchange) handshakeMsg);
-					generateKeys(premasterSecret);
-					break;
-
+					receivedClientKeyExchange((PSKClientKeyExchange) handshakeMsg);
+					return;
 				case EC_DIFFIE_HELLMAN:
 					premasterSecret = receivedClientKeyExchange((ECDHClientKeyExchange) handshakeMsg);
 					generateKeys(premasterSecret);
@@ -644,32 +642,78 @@ public class ServerHandshaker extends Handshaker {
 	 * @throws HandshakeException
 	 *             if no specified preshared key available.
 	 */
-	private byte[] receivedClientKeyExchange(final PSKClientKeyExchange message) throws HandshakeException {
+	private void receivedClientKeyExchange(final PSKClientKeyExchange message) throws HandshakeException {
 
 		clientKeyExchange = message;
-		byte[] psk = null;
 
 		// use the client's PSK identity to get right preshared key
-		String identity = message.getIdentity();
+		final String identity = message.getIdentity();
 
 		LOGGER.log(Level.FINER, "Client [{0}] uses PSK identity [{1}]",
 				new Object[]{getPeerAddress(), identity});
 
 		recordLayer.pauseRetransmission();
-		if (getIndicatedServerNames() == null) {
-			psk = pskStore.getKey(identity);
-		} else {
-			psk = pskStore.getKey(getIndicatedServerNames(), identity);
-		}
-		recordLayer.resumeRetransmission();
+		waitingForData = true;
+		getPsk(identity, getIndicatedServerNames(), new PskCallback() {
+			@Override
+			public void success(byte[] psk) {
+				pskAvailable(identity, psk);
+			}
+			@Override
+			public void error(Exception e) {
+				// TODO handle error should probably executed as a task for the record Thread pool
+			}
+		});
+	}
 
+	// TODO this could be the API of an asynchronous PSKstore
+	private void getPsk(final String identity, final ServerNames serverNames, final PskCallback pskAccess) {
+
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				if (serverNames == null) {
+					pskAccess.success(pskStore.getKey(identity));
+				} else {
+					pskAccess.success(pskStore.getKey(serverNames, identity));
+				}
+			}
+		});
+		thread.start();
+	}
+
+	private interface PskCallback {
+		void success(byte[] psk);
+		void error(Exception e);
+	}
+	
+	private synchronized void pskAvailable(String identity, byte[] psk) {
+		// This code should be executed as a task for the record processor
+		// thread pool.
 		if (psk == null) {
-			throw new HandshakeException(
-					String.format("Cannot authenticate client, identity [%s] is unknown", identity),
-					new AlertMessage(AlertLevel.FATAL, AlertDescription.HANDSHAKE_FAILURE, session.getPeer()));
+			// TODO handle it
+			LOGGER.log(Level.FINER, "No PSK for Client [{0}] using PSK identity [{1}]",
+					new Object[] { getPeerAddress(), identity });
+			waitingForData = false;
 		} else {
+			recordLayer.resumeRetransmission();
 			session.setPeerIdentity(new PreSharedKeyIdentity(identity));
-			return generatePremasterSecretFromPSK(psk);
+			byte[] premasterSecret = generatePremasterSecretFromPSK(psk);
+			generateKeys(premasterSecret);
+
+			handshakeMessages = ByteArrayUtils.concatenate(handshakeMessages, clientKeyExchange.getRawMessage());
+			if (!clientAuthenticationRequired || getKeyExchangeAlgorithm() != KeyExchangeAlgorithm.EC_DIFFIE_HELLMAN) {
+				expectChangeCipherSpecMessage();
+			}
+
+			incrementNextReceiveSeq();
+			waitingForData = false;
+			try {
+				processPendingMessage();
+			} catch (HandshakeException e) {
+				// error should not be caught here but should be caught and
+				// handled by the record processor ?
+			}
 		}
 	}
 

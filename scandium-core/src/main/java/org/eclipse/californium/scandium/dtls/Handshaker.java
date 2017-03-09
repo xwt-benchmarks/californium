@@ -57,9 +57,9 @@ import javax.crypto.spec.SecretKeySpec;
 import org.eclipse.californium.scandium.dtls.AlertMessage.AlertDescription;
 import org.eclipse.californium.scandium.dtls.AlertMessage.AlertLevel;
 import org.eclipse.californium.scandium.dtls.cipher.CipherSuite.KeyExchangeAlgorithm;
+import org.eclipse.californium.scandium.dtls.cipher.ECDHECryptography;
 import org.eclipse.californium.scandium.dtls.cipher.PseudoRandomFunction;
 import org.eclipse.californium.scandium.dtls.cipher.PseudoRandomFunction.Label;
-import org.eclipse.californium.scandium.dtls.cipher.ECDHECryptography;
 import org.eclipse.californium.scandium.util.ByteArrayUtils;
 
 
@@ -112,6 +112,9 @@ public abstract class Handshaker {
 
 	/** The next expected handshake message sequence number. */
 	private int nextReceiveSeq = 0;
+
+	/** Waiting for data we can not handle more message */
+	protected boolean waitingForData = false;
 
 	/** Buffer for received records that can not be processed immediately. */
 	protected InboundMessageBuffer inboundMessageBuffer;
@@ -267,6 +270,10 @@ public abstract class Handshaker {
 
 			DTLSMessage result = null;
 
+			if (waitingForData) {
+				return null;
+			}
+
 			if (isChangeCipherSpecMessageExpected() && changeCipherSpec != null) {
 				result = changeCipherSpec;
 				changeCipherSpec = null;
@@ -331,7 +338,7 @@ public abstract class Handshaker {
 					//    -> stash the FINISHED message (note that the FINISHED message's epoch is
 					//       current read epoch + 1 and thus will have been queued by the
 					//       "else" branch below
-					if (isChangeCipherSpecMessageExpected()) {
+					if (!waitingForData && isChangeCipherSpecMessageExpected()) {
 						return fragment;
 					} else {
 						// store message for later processing
@@ -342,7 +349,16 @@ public abstract class Handshaker {
 					HandshakeMessage handshakeMessage = (HandshakeMessage) fragment;
 					int messageSeq = handshakeMessage.getMessageSeq();
 					if (messageSeq == nextReceiveSeq) {
-						return handshakeMessage;
+						if (waitingForData) {
+							LOGGER.log(Level.FINER,
+									"Queued message from current epoch, message_seq [{0}] as we can not handle it for now.",
+									new Object[] { messageSeq });
+							queue.add(candidate);
+							return null;
+						} else {
+							return handshakeMessage;
+						}
+
 					} else if (messageSeq > nextReceiveSeq) {
 						LOGGER.log(Level.FINER,
 								"Queued newer message from current epoch, message_seq [{0}] > next_receive_seq [{1}]",
@@ -371,6 +387,34 @@ public abstract class Handshaker {
 		}
 	}
 
+	public synchronized final void processPendingMessage() throws HandshakeException {
+		try {
+			// process next expected message (if available yet)
+			DTLSMessage messageToProcess = inboundMessageBuffer.getNextMessage();
+			while (messageToProcess != null) {
+				if (messageToProcess instanceof FragmentedHandshakeMessage) {
+					messageToProcess = handleFragmentation((FragmentedHandshakeMessage) messageToProcess);
+				}
+
+				if (messageToProcess == null) {
+					// messageToProcess is fragmented and not all parts have
+					// been received yet
+				} else {
+					// continue with the now fully re-assembled message
+					doProcessMessage(messageToProcess);
+				}
+
+				// process next expected message (if available yet)
+				messageToProcess = inboundMessageBuffer.getNextMessage();
+			}
+		} catch (GeneralSecurityException | HandshakeException e) {
+			LOGGER.log(Level.WARNING, String.format("Cannot process handshake message from peer [%s] due to [%s]",
+					getSession().getPeer(), e.getMessage()), e);
+			AlertMessage alert = new AlertMessage(AlertLevel.FATAL, AlertDescription.INTERNAL_ERROR, session.getPeer());
+			throw new HandshakeException("Cannot process handshake message", alert);
+		}
+	}
+
 	/**
 	 * Processes a handshake record received from a peer based on the
 	 * handshake's current state.
@@ -386,7 +430,7 @@ public abstract class Handshaker {
 	 * @throws HandshakeException if the record's plaintext fragment cannot be parsed into
 	 *            a handshake message or cannot be processed properly
 	 */
-	public final void processMessage(Record record) throws HandshakeException {
+	public synchronized final void processMessage(Record record) throws HandshakeException {
 		// The DTLS 1.2 spec (section 4.1.2.6) advises to do replay detection
 		// before MAC validation based on the record's sequence numbers
 		// see http://tools.ietf.org/html/rfc6347#section-4.1.2.6
