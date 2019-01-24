@@ -29,6 +29,7 @@ import org.eclipse.californium.elements.util.SslContextUtil;
 import org.eclipse.californium.scandium.DTLSConnector;
 import org.eclipse.californium.scandium.config.DtlsConnectorConfig;
 import org.eclipse.californium.scandium.dtls.CertificateType;
+import org.eclipse.californium.scandium.dtls.SingleNodeConnectionIdGenerator;
 import org.eclipse.californium.scandium.dtls.pskstore.InMemoryPskStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,11 +49,11 @@ public class ExampleDTLSServer {
 	public ExampleDTLSServer() {
 		InMemoryPskStore pskStore = new InMemoryPskStore();
 		// put in the PSK store the default identity/psk for tinydtls tests
-		pskStore.setKey("Client_identity", "secretPSK".getBytes());
+		pskStore.setKey("Client_identity", "secretPSK".getBytes()); // 73 65 63 72 65 74 50 53 4b
 		try {
-			// load the key store
+			// load the key store, self signed certificate
 			SslContextUtil.Credentials serverCredentials = SslContextUtil.loadCredentials(
-					SslContextUtil.CLASSPATH_SCHEME + KEY_STORE_LOCATION, "server", KEY_STORE_PASSWORD,
+					SslContextUtil.CLASSPATH_SCHEME + KEY_STORE_LOCATION, "self", KEY_STORE_PASSWORD,
 					KEY_STORE_PASSWORD);
 			Certificate[] trustedCertificates = SslContextUtil.loadTrustedCertificates(
 					SslContextUtil.CLASSPATH_SCHEME + TRUST_STORE_LOCATION, "root", TRUST_STORE_PASSWORD);
@@ -63,8 +64,10 @@ public class ExampleDTLSServer {
 			builder.setPskStore(pskStore);
 			builder.setIdentity(serverCredentials.getPrivateKey(), serverCredentials.getCertificateChain(),
 					CertificateType.RAW_PUBLIC_KEY, CertificateType.X_509);
-			builder.setTrustStore(trustedCertificates);
-			builder.setRpkTrustAll();
+//			builder.setTrustStore(trustedCertificates);
+//			builder.setRpkTrustAll();
+			builder.setClientAuthenticationRequired(false);
+			builder.setConnectionIdGenerator(new SingleNodeConnectionIdGenerator(6));
 			dtlsConnector = new DTLSConnector(builder.build());
 			dtlsConnector
 					.setRawDataReceiver(new RawDataChannelImpl(dtlsConnector));
