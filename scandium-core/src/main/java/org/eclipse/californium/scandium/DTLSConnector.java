@@ -925,8 +925,11 @@ public class DTLSConnector implements Connector, RecordLayer {
 			} else if (epoch > 0 && useCid) {
 				DTLSSession session = connection.getSession();
 				if (session != null && session.getWriteConnectionId() != null) {
-					LOGGER.debug("Discarding record received from peer [{}], CID required!", record.getPeerAddress());
-					return;
+					// work around for go,  TLS_CID isn't used for FINISHED!
+					if (record.getType() != ContentType.HANDSHAKE) {
+						LOGGER.debug("Discarding record received from peer [{}], CID required!", record.getPeerAddress());
+						return;
+					}
 				}
 			}
 
