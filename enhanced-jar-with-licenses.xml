@@ -17,16 +17,18 @@
 		</fileSet>
 		<fileSet>
 			<directory>${project.build.directory}/generated-resources</directory>
-			<outputDirectory>/licenses</outputDirectory>
+			<outputDirectory>licenses</outputDirectory>
 			<useDefaultExcludes>false</useDefaultExcludes>
 		</fileSet>
 	</fileSets>
 	<dependencySets>
 		<dependencySet>
+			<includes>
+				<include>org.eclipse.californium:californium-legal</include>
+			</includes>
 			<outputDirectory>/</outputDirectory>
 			<useProjectArtifact>false</useProjectArtifact>
 			<unpack>true</unpack>
-			<scope>runtime</scope>
 		</dependencySet>
 	</dependencySets>
 </assembly>
