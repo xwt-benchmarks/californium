@@ -15,6 +15,8 @@
  ******************************************************************************/
 package org.eclipse.californium.core.server;
 
+import static org.junit.Assert.assertEquals;
+
 import org.eclipse.californium.category.Small;
 import org.eclipse.californium.core.CoapServer;
 import org.junit.Test;
@@ -30,5 +32,25 @@ public class CoapServerTest {
 	public void testDestroyWithoutStart() {
 		CoapServer server = new CoapServer();
 		server.destroy();
+	}
+
+	@Test
+	public void testStartStopDestroy() {
+		// look at nb active thread before.
+		int numberOfThreadbefore = Thread.activeCount();
+
+		CoapServer server = new CoapServer();
+		server.start();
+		server.stop();
+		server.destroy();
+
+		// ensure all thread are destroyed
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+		}
+		// +2 because of static ScheduledThreadPoolExecutor from ExecutorsUtil
+		int expectedNumberOfThread = numberOfThreadbefore + 2;
+		assertEquals("All news threads created must be destroyed", expectedNumberOfThread, Thread.activeCount());
 	}
 }
