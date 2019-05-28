@@ -1,0 +1,55 @@
+pipeline {
+	// continues deployment
+	//
+	// Intended to be used as "Pipeline script from SCM".
+	// Create a pipeline job and configure the repo and branch
+	// to be build in the SCM git definition of the pipeline
+
+	agent any
+	triggers {
+		// once every night for deployment
+		pollSCM('H(0-59) 2 * * *')
+		// poll scm works easier without git-definition in the pipeline!
+	}
+	tools {
+		maven 'apache-maven-latest'
+		jdk 'oracle-jdk7-latest'
+	}
+	environment {
+		// reset global env of ci.eclipse jenkins
+		// otherwise these settings will fail using java 1.7
+		JAVA_TOOL_OPTIONS = ' '
+		_JAVA_OPTIONS = ' '
+		// enable junit test features to relax test timing
+		MVN_ARGS = '-Dorg.eclipse.californium.junit.starving=true' +
+		' -Dorg.eclipse.californium.elements.assume.TimeAssume.enable=true'
+	}
+	options {
+		disableConcurrentBuilds()
+		buildDiscarder(logRotator(numToKeepStr: '10'))
+		quietPeriod(5)
+		skipStagesAfterUnstable()
+		timeout(time: 20, unit: 'MINUTES')
+	}
+	stages {
+		stage ('Build') {
+			steps {
+				sh "mvn $MVN_ARGS clean verify"
+			}
+			post {
+				success {
+					junit '**/target/surefire-reports/*.xml'
+				}
+			}
+		}
+		stage ('Deploy') {
+			environment {
+				MVN_DEPLOY_ARGS = '-DenableEclipseJarSigner=true' +
+				' -DskipTests=true'
+			}
+			steps {
+				sh "mvn $MVN_ARGS $MVN_DEPLOY_ARGS --projects californium-osgi,californium-proxy,demo-apps/cf-plugtest-server -am deploy"
+			}
+		}
+	}
+}

@@ -158,6 +158,7 @@ public class LockstepEndpoint {
 	public void assumeNoUnintendedRetransmission(boolean enable) {
 		if (Boolean.getBoolean(PROPERTY_NAME_STARVING)) {
 			this.assumeNoUnintendedRetransmission = enable;
+			System.out.println("assume.starving:" + this.assumeNoUnintendedRetransmission);
 		} else {
 			this.assumeNoUnintendedRetransmission = false;
 		}

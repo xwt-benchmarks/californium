@@ -1,0 +1,47 @@
+pipeline {
+	// continues integration
+	//
+	// Intended to be used as "Pipeline script from SCM".
+	// Create a pipeline job and configure the repo and branch
+	// to be build in the SCM git definition of the pipeline
+
+	agent any
+	triggers {
+		// every 5 minutes for integration
+		pollSCM('H/5 * * * *')
+		// poll scm works easier without git-definition in the pipeline!
+	}
+	tools {
+		maven 'apache-maven-latest'
+		jdk 'oracle-jdk7-latest'
+	}
+	environment {
+		// reset global env of ci.eclipse jenkins
+		// otherwise these settings will fail using java 1.7
+		JAVA_TOOL_OPTIONS = ' '
+		_JAVA_OPTIONS = ' '
+		// enable junit test features to relax test timing
+		MVN_ARGS = '-Dorg.eclipse.californium.junit.starving=true' +
+		' -Dorg.eclipse.californium.elements.assume.TimeAssume.enable=true'
+	}
+	options {
+		disableConcurrentBuilds()
+		buildDiscarder(logRotator(numToKeepStr: '10'))
+		quietPeriod(5)
+		skipStagesAfterUnstable()
+		timeout(time: 20, unit: 'MINUTES')
+	}
+	stages {
+		stage ('Build') {
+			steps {
+				print "Build ..."
+				sh "mvn $MVN_ARGS clean verify"
+			}
+			post {
+				success {
+					junit '**/target/surefire-reports/*.xml'
+				}
+			}
+		}
+	}
+}
