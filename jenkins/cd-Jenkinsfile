@@ -1,0 +1,71 @@
+/*******************************************************************************
+ * Copyright (c) 2019 Bosch Software Innovations GmbH and others.
+ * 
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ * 
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at
+ *    http://www.eclipse.org/org/documents/edl-v10.html.
+ * 
+ * Contributors:
+ *    Bosch Software Innovations GmbH - Initial creation
+ ******************************************************************************/
+
+pipeline {
+	// continues deployment
+	//
+	// Intended to be used as "Pipeline script from SCM".
+	// Create a pipeline job and configure the repo and branch
+	// to be build in the SCM git definition of the pipeline
+
+	agent any
+	triggers {
+		// once every night for deployment
+		pollSCM('H(0-59) 2 * * *')
+		// poll scm works easier without git-definition in the pipeline!
+	}
+	tools {
+		maven 'apache-maven-latest'
+		jdk 'oracle-jdk7-latest'
+	}
+	environment {
+		// reset global env of ci.eclipse jenkins
+		// otherwise these settings will fail using java 1.7
+		JAVA_TOOL_OPTIONS = ' '
+		_JAVA_OPTIONS = ' '
+		// enable junit test features to relax test timing
+		MVN_ARGS = '-Dorg.eclipse.californium.junit.starving=true' +
+		' -Dorg.eclipse.californium.elements.assume.TimeAssume.enable=true'
+	}
+	options {
+		disableConcurrentBuilds()
+		buildDiscarder(logRotator(numToKeepStr: '10'))
+		quietPeriod(5)
+		skipStagesAfterUnstable()
+		timeout(time: 20, unit: 'MINUTES')
+	}
+	stages {
+		stage ('Build') {
+			steps {
+				sh "mvn $MVN_ARGS clean verify"
+			}
+			post {
+				success {
+					junit '**/target/surefire-reports/*.xml'
+				}
+			}
+		}
+		stage ('Deploy') {
+			environment {
+				MVN_DEPLOY_ARGS = '-DenableEclipseJarSigner=true' +
+				' -DskipTests=true'
+			}
+			steps {
+				sh "mvn $MVN_ARGS $MVN_DEPLOY_ARGS --projects californium-osgi,californium-proxy,demo-apps/cf-plugtest-server -am deploy"
+			}
+		}
+	}
+}
