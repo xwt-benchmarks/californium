@@ -92,7 +92,7 @@ public class InMemoryConnectionStore implements ResumptionSupportingConnectionSt
 	private static final long DEFAULT_EXPIRATION_THRESHOLD = 36 * 60 * 60; // 36h
 	private final SessionCache sessionCache;
 	protected final LeastRecentlyUsedCache<ConnectionId, Connection> connections;
-	protected final ConcurrentMap<InetSocketAddress, Connection> connectionsByAddress;
+	protected final ConcurrentHashMap<InetSocketAddress, Connection> connectionsByAddress;
 	protected final ConcurrentMap<SessionId, Connection> connectionsByEstablishedSession;
 
 	private ConnectionListener connectionListener;
@@ -189,7 +189,7 @@ public class InMemoryConnectionStore implements ResumptionSupportingConnectionSt
 		});
 
 		LOG.info("Created new InMemoryConnectionStore [capacity: {}, connection expiration threshold: {}s]",
-				capacity, threshold);
+				capacity, threshold, connectionsByAddress.mappingCount());
 	}
 
 	/**
