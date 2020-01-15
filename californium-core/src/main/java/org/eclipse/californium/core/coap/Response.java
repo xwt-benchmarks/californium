@@ -148,11 +148,12 @@ public class Response extends Message {
 	 * @throws IllegalArgumentException if destination address is multicast
 	 *             address
 	 */
+	@Override
 	public Message setDestinationContext(EndpointContext peerContext) {
 		if (peerContext != null && peerContext.getPeerAddress().getAddress().isMulticastAddress()) {
 			throw new IllegalArgumentException("Multicast destination is not supported for responses!");
 		}
-		setInternalDestinationContext(peerContext);
+		super.setDestinationContext(peerContext);
 		return this;
 	}
 

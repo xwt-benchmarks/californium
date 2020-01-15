@@ -525,8 +525,9 @@ public class Request extends Message {
 	 * @param peerContext destination endpoint context
 	 * @return this Request
 	 */
+	@Override
 	public Request setDestinationContext(EndpointContext peerContext) {
-		super.setInternalDestinationContext(peerContext);
+		super.setDestinationContext(peerContext);
 		multicast = peerContext != null && peerContext.getPeerAddress().getAddress().isMulticastAddress();
 		return this;
 	}

@@ -623,13 +623,11 @@ public abstract class Message {
 	 * @throws IllegalArgumentException if destination address is multicast
 	 *             address, but message is no {@link Request}
 	 * @see #setRequestDestinationContext(EndpointContext)
-	 * @deprecated use {@link #setDestinationContext(EndpointContext)} of
-	 *             {@link Request}, {@link Response}, or {@link EmptyMessage}
-	 *             instead. The parameter validation depends too much on the
-	 *             context to use this function on the base-class.
 	 */
-	@Deprecated
-	public abstract Message setDestinationContext(EndpointContext peerContext);
+	public Message setDestinationContext(EndpointContext peerContext) {
+		this.destinationContext = peerContext;
+		return this;
+	}
 
 	/**
 	 * Set destination endpoint context for requests.
@@ -641,15 +639,6 @@ public abstract class Message {
 	 */
 	@Deprecated
 	protected void setRequestDestinationContext(EndpointContext peerContext) {
-		this.destinationContext = peerContext;
-	}
-
-	/**
-	 * Set destination endpoint context.
-	 * 
-	 * @param peerContext destination endpoint context
-	 */
-	protected void setInternalDestinationContext(EndpointContext peerContext) {
 		this.destinationContext = peerContext;
 	}
 
