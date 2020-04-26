@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+		xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
 	<modelVersion>4.0.0</modelVersion>
 
@@ -107,6 +107,11 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.build.javaVersion>1.7</project.build.javaVersion>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<checkerFrameworkVersion><!-- checker-framework-version -->3.1.1<!-- /checker-framework-version --></checkerFrameworkVersion>
+		<!-- These properties will be set by the Maven Dependency plugin -->
+		<annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
+		<errorProneJavac>${com.google.errorprone:javac:jar}</errorProneJavac>
 		<snapshotDependencyAllowed>true</snapshotDependencyAllowed>
 		<cbor.version>4.0.0</cbor.version>
 		<slf4j.version>1.7.25</slf4j.version>
@@ -150,6 +155,31 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>checker-qual</artifactId>
+				<version>${checkerFrameworkVersion}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>crypto-checker-qual</artifactId>
+				<version>0.1-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>checker</artifactId>
+				<version>${checkerFrameworkVersion}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.checkerframework</groupId>
+				<artifactId>jdk8</artifactId>
+				<version>${checkerFrameworkVersion}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.errorprone</groupId>
+				<artifactId>javac</artifactId>
+				<version>9+181-r4173-1</version>
+			</dependency>
 			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>element-connector</artifactId>
@@ -300,14 +330,47 @@
 				<plugin>
 					<artifactId>maven-dependency-plugin</artifactId>
 					<version>3.1.1</version>
+					<executions>
+						<execution>
+							<goals>
+								<goal>properties</goal>
+							</goals>
+						</execution>
+					</executions>
 				</plugin>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.8.0</version>
+					<version>3.8.1</version>
 					<configuration>
+						<fork>true</fork>
 						<source>${project.build.javaVersion}</source>
 						<target>${project.build.javaVersion}</target>
 						<encoding>${project.build.sourceEncoding}</encoding>
+						<generatedSourcesDirectory>${project.build.directory}</generatedSourcesDirectory>
+						<compilerArguments>
+							<Xmaxerrs>10000</Xmaxerrs>
+							<Xmaxwarns>10000</Xmaxwarns>
+						</compilerArguments>
+						<showWarnings>true</showWarnings>
+						<verbose>true</verbose>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.checkerframework</groupId>
+								<artifactId>crypto-checker</artifactId>
+								<version>0.1-SNAPSHOT</version>
+							</path>
+						</annotationProcessorPaths>
+						<annotationProcessors>
+							<!-- Add all the checkers you want to enable here -->
+							<annotationProcessor>org.checkerframework.checker.crypto.CryptoChecker</annotationProcessor>
+						</annotationProcessors>
+						<compilerArgs>
+							<!-- If using JDK 8, use only the two arguments immediately below. -->
+							<arg>-J-Xbootclasspath/p:${errorProneJavac}</arg>
+							<arg>-Xbootclasspath/p:${annotatedJdk}</arg>
+							<compilerArg>-Astubs=cipher.astub
+							</compilerArg>
+						</compilerArgs>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -372,6 +435,31 @@
 					<inherited>true</inherited>
 					<dependencies>
 						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>checker-qual</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>crypto-checker-qual</artifactId>
+							<version>0.1-SNAPSHOT</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>checker</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>jdk8</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>com.google.errorprone</groupId>
+							<artifactId>javac</artifactId>
+							<version>9+181-r4173-1</version>
+						</dependency>
+						<dependency>
 							<groupId>${project.groupId}</groupId>
 							<artifactId>californium-assembly</artifactId>
 							<version>${project.version}</version>
@@ -434,6 +522,31 @@
 					<artifactId>revapi-maven-plugin</artifactId>
 					<version>0.11.2</version>
 					<dependencies>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>checker-qual</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>crypto-checker-qual</artifactId>
+							<version>0.1-SNAPSHOT</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>checker</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>org.checkerframework</groupId>
+							<artifactId>jdk8</artifactId>
+							<version>${checkerFrameworkVersion}</version>
+						</dependency>
+						<dependency>
+							<groupId>com.google.errorprone</groupId>
+							<artifactId>javac</artifactId>
+							<version>9+181-r4173-1</version>
+						</dependency>
 						<dependency>
 							<groupId>org.revapi</groupId>
 							<artifactId>revapi-java</artifactId>
@@ -710,15 +823,15 @@
 			<build>
 				<plugins>
 					<plugin>
-					<groupId>org.revapi</groupId>
-					<artifactId>revapi-maven-plugin</artifactId>
-					<executions>
-						<execution>
-							<goals>
-								<goal>check</goal>
-							</goals>
-						</execution>
-					</executions>
+						<groupId>org.revapi</groupId>
+						<artifactId>revapi-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>check</goal>
+								</goals>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
