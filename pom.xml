@@ -151,11 +151,6 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.checkerframework</groupId>
-				<artifactId>checker-qual</artifactId>
-				<version>3.3.0</version>
-			</dependency>
-			<dependency>
 				<groupId>${project.groupId}</groupId>
 				<artifactId>element-connector</artifactId>
 				<version>${project.version}</version>
