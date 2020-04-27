@@ -40,6 +40,7 @@ import java.util.List;
 import javax.crypto.Cipher;
 import javax.crypto.Mac;
 
+import org.checkerframework.checker.crypto.qual.AllowedAlgorithms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -927,11 +928,11 @@ public enum CipherSuite {
 		private final boolean supported;
 		private final ThreadLocalCipher cipher;
 
-		private CipherSpec(String transformation, CipherType type, int keyLength, int fixedIvLength, int recordIvLength) {
+		private CipherSpec(@AllowedAlgorithms({"((PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256))|AES|AES_128|AES_256|AESWrap|ARCFOUR|ECIES|RC5|RSA)\\/(NONE|CBC|GCM|CCM|CFB|CTR|CTS|OFB|PCBC)\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "RSA", "RSA\\/ECB\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256)"}) String transformation, CipherType type, int keyLength, int fixedIvLength, int recordIvLength) {
 			this(transformation, type, keyLength, fixedIvLength, recordIvLength, 0);
 		}
 
-		private CipherSpec(String transformation, CipherType type, int keyLength, int fixedIvLength, int recordIvLength,
+		private CipherSpec(@AllowedAlgorithms({"((PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256))|AES|AES_128|AES_256|AESWrap|ARCFOUR|ECIES|RC5|RSA)\\/(NONE|CBC|GCM|CCM|CFB|CTR|CTS|OFB|PCBC)\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "RSA", "RSA\\/ECB\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256)"}) String transformation, CipherType type, int keyLength, int fixedIvLength, int recordIvLength,
 				int macLength) {
 			this.transformation = transformation;
 			this.type = type;

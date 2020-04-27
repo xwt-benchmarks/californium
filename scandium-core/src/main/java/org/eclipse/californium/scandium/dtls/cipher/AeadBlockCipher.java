@@ -23,6 +23,8 @@ import javax.crypto.spec.GCMParameterSpec;
 
 import org.eclipse.californium.elements.util.NotForAndroid;
 
+import org.checkerframework.checker.crypto.qual.AllowedAlgorithms;
+
 /**
  * A generic Authenticated Encryption with Associated Data block cipher mode.
  */
@@ -43,7 +45,7 @@ public class AeadBlockCipher {
 	 * @param keyLength key length in bytes
 	 * @return {@code true}, if supported
 	 */
-	public final static boolean isSupported(String transformation, int keyLength) {
+	public final static boolean isSupported(@AllowedAlgorithms({"((PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256))|AES|AES_128|AES_256|AESWrap|ARCFOUR|ECIES|RC5|RSA)\\/(NONE|CBC|GCM|CCM|CFB|CTR|CTS|OFB|PCBC)\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "RSA", "RSA\\/ECB\\/(NoPadding|ISO10126Padding|OAEPPadding|PKCS1Padding|PKCS5Padding|PKCS7Padding|SSL3Padding|(OAEPWith(SHA-224|SHA-256|SHA-384|SHA-512)AndMGF1Padding))", "PBEWith(SHA256|HmacSHA1|HmacSHA224|HmacSHA256|HmacSHA384|HmacSHA512)And(DESede|TripleDES|2KeyTripleDES|3KeyTripleDES|AES_128|AES_256)"}) String transformation, int keyLength) {
 		try {
 			// check, if java-vm supports transformation
 			Cipher cipher;
