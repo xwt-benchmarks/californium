@@ -20,6 +20,7 @@ import org.checkerframework.checker.crypto.qual.AllowedAlgorithms;
 import java.security.GeneralSecurityException;
 
 import javax.crypto.Cipher;
+import org.checkerframework.checker.crypto.qual.AllowedAlgorithms;
 
 /**
  * Thread local cipher.
