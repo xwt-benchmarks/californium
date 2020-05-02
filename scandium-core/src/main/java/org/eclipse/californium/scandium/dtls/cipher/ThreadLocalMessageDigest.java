@@ -17,6 +17,7 @@ package org.eclipse.californium.scandium.dtls.cipher;
 
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import org.checkerframework.checker.crypto.qual.AllowedAlgorithms;
 
 /**
  * Thread local MessageDigest.
@@ -34,7 +35,7 @@ public class ThreadLocalMessageDigest extends ThreadLocalCrypto<MessageDigest> {
 	 * @param algorithm algorithm. Passed to
 	 *            {@link MessageDigest#getInstance(String)}.
 	 */
-	public ThreadLocalMessageDigest(final String algorithm) {
+	public ThreadLocalMessageDigest(final @AllowedAlgorithms({"SHA-(224|256|384|512|512\\/224|512\\/256)"}) String algorithm) {
 		super(new Factory<MessageDigest>() {
 
 			@Override

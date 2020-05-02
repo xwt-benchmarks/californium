@@ -772,7 +772,7 @@ public enum CipherSuite {
 		private final ThreadLocalMac mac;
 		private final ThreadLocalMessageDigest md;
 
-		private MACAlgorithm(String name, String mdName, int outputLength, int messageLengthBytes,
+		private MACAlgorithm(String name, @AllowedAlgorithms({"SHA-(224|256|384|512|512\\/224|512\\/256)"})String mdName, int outputLength, int messageLengthBytes,
 				int messageBlockLength) {
 			this.name = name;
 			this.mdName = mdName;
